@@ -1,4 +1,3 @@
-# Lab Investigation Docs
 # SOC Investigation Lab – Splunk Web Attack Analysis  
 Author: **Shubharyan Asthana**
 
