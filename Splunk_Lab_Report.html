@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Splunk Lab Report</title>
+<style>
+    /* RESET & PRINT SETTINGS */
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap');
+    
+    body { margin: 0; padding: 0; background: #0f111a; color: #a0aabf; font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    
+    .container {
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 40px;
+        background: #0f111a;
+        min-height: 100vh;
+        border-top: 5px solid #00d4ff; /* Cyan Accent */
+    }
+
+    h1, h2, h3, h4 { color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; }
+    h1 { font-size: 26px; border-bottom: 2px solid #2d3648; padding-bottom: 15px; margin-bottom: 30px; }
+    h2 { color: #00d4ff; font-size: 18px; margin-top: 35px; border-left: 4px solid #00d4ff; padding-left: 12px; }
+    h3 { font-size: 14px; color: #e2e8f0; margin-top: 25px; font-weight: 700; }
+
+    /* DASHBOARD GRID */
+    .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-bottom: 30px;
+        background: #1a1f2e;
+        padding: 20px;
+        border-radius: 4px;
+        border: 1px solid #2d3648;
+    }
+    .meta-item strong { color: #64748b; font-size: 10px; display: block; text-transform: uppercase; margin-bottom: 5px; }
+    .meta-item span { color: #fff; font-weight: 600; font-size: 14px; }
+    .severity-high { color: #ff4d4d !important; text-shadow: 0 0 5px rgba(255, 77, 77, 0.4); }
+
+    /* SPLUNK TERMINAL STYLE */
+    .spl-block {
+        background-color: #0d0d0d;
+        border: 1px solid #333;
+        border-left: 4px solid #f58220; /* Splunk Orange */
+        color: #22c55e;
+        font-family: 'JetBrains Mono', monospace;
+        padding: 15px;
+        margin: 10px 0 20px 0;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: pre-wrap;
+    }
+
+    /* TABLES */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+    th { background: #2d3648; color: #fff; padding: 10px; text-align: left; border: 1px solid #3f4c6b; }
+    td { background: #151921; border: 1px solid #2d3648; padding: 10px; color: #cbd5e1; vertical-align: top; }
+
+    /* LISTS */
+    ul { padding-left: 20px; margin-bottom: 15px; }
+    li { margin-bottom: 5px; font-size: 13px; line-height: 1.5; }
+
+    /* REMEDIATION BOXES */
+    .remediation-box { border: 1px solid #3f4c6b; padding: 15px; background: #1a1f2e; margin-bottom: 10px; }
+    .remediation-header { color: #00d4ff; font-weight: bold; margin-bottom: 10px; display: block; }
+
+    @media print {
+        body { margin: 0; }
+        .container { width: 100%; max-width: none; margin: 0; }
+        .page-break { page-break-before: always; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div style="text-align: right; font-size: 10px; color: #64748b; margin-bottom: 10px;">// CONFIDENTIAL</div>
+    
+    <h1>Splunk-Based Web Application Compromise Report <br><span style="font-size:16px; color:#64748b; text-transform:none;">Splunk Basics - Did you SIEM? TRYHACKME LAB</span></h1>
+
+      <div class="meta-grid">
+        <div class="meta-item"><strong>Case ID</strong><span>AOC-2025-WEB-IR-001</span></div>
+        <div class="meta-item"><strong>Analyst</strong><span>[Shubharyan Asthana]</span></div>
+        <div class="meta-item"><strong>System of Interest</strong><span>Public Web Server (10.10.1.5)</span></div>
+        <div class="meta-item"><strong>SIEM Platform</strong><span>Splunk Enterprise</span></div>
+        <div class="meta-item"><strong>Time Range Analyzed</strong><span>All available logs, with focus on 2025-10-12</span></div>
+        <div class="meta-item"><strong>Severity</strong><span class="severity-high">HIGH (Confirmed exploitation, web shell, ransomware staging, C2 communication, data exfiltration)</span></div>
+    </div>
+
+    <h2>1. Lab Overview and Objectives</h2>
+    <h3>Purpose</h3>
+    <p>To perform an end-to-end security investigation using Splunk SIEM focused on a suspected web server compromise. The objective was to:</p>
+    <ul>
+        <li>Validate proper ingestion of web_traffic and firewall_logs into Splunk’s main index.</li>
+        <li>Detect anomalous activity using SPL queries, visualizations, and correlation.</li>
+        <li>Identify attacker IP(s), techniques, and sequence of events.</li>
+        <li>Map activity to MITRE ATT&CK.</li>
+        <li>Document root cause, impact, and recommended remediation.</li>
+    </ul>
+
+    <h3>Expected Outcomes</h3>
+    <ul>
+        <li>Identification of anomalous traffic spike.</li>
+        <li>Isolation of attacker user agents and IP.</li>
+        <li>Reconstruction of attack chain: <strong>Reconnaissance → Enumeration → Exploitation → Web Shell → Ransomware Staging → C2 → Exfiltration.</strong></li>
+        <li>Production of a professional-grade investigative report.</li>
+    </ul>
+
+    <h2>2. Methodology</h2>
+    
+    <h3>2.1 Data Validation & Inspection</h3>
+    <p>Initial validation of data volume and sourcetypes:</p>
+    <div class="spl-block">index=main | stats count by sourcetype</div>
+    <p>Confirmed two datasets:</p>
+    <ul>
+        <li>web_traffic</li>
+        <li>firewall_logs</li>
+    </ul>
+
+    <h3>2.2 Trend Analysis & Anomaly Detection</h3>
+    <p>Identify days with abnormal event spikes:</p>
+    <div class="spl-block">index=main sourcetype=web_traffic 
+| timechart span=1d count</div>
+    <p>Sort by highest activity (descending):</p>
+    <div class="spl-block">index=main sourcetype=web_traffic
+| timechart span=1d count
+| sort -count</div>
+    <p><strong>Observation:</strong> 2025-10-12 shows a clear surge in activity, initiating focused triage.</p>
+
+    <h3>2.3 Filtering Benign Browser Traffic</h3>
+    <p>Remove standard browser activity:</p>
+    <div class="spl-block">index=main sourcetype=web_traffic
+user_agent!=*Mozilla* user_agent!=*Chrome* user_agent!=*Firefox* user_agent!=*Safari*</div>
+    <p>Identify top non-browser source:</p>
+    <div class="spl-block">| stats count by client_ip
+| sort -count
+| head 5</div>
+    <p><strong>Result:</strong> Malicious actor identified as: <span class="severity-high">👉 198.51.100.55</span></p>
+
+    <div class="page-break"></div>
+
+    <h3>2.4 Attack Chain Reconstruction</h3>
+
+    <h4>Reconnaissance</h4>
+    <p>Search for sensitive config probing:</p>
+    <div class="spl-block">sourcetype=web_traffic client_ip="198.51.100.55"
+AND path IN ("/.env", "/*phpinfo*", "/.git*")
+| table _time path user_agent status</div>
+
+    <h4>Directory Traversal (T1083 / T1005 / T1595)</h4>
+    <div class="spl-block">sourcetype=web_traffic client_ip="198.51.100.55"
+AND path="*..\\../*"
+OR path="*redirect*"
+| stats count by path</div>
+    <p><strong>Result:</strong> 658 traversal attempts.</p>
+
+    <h4>SQL Injection Using Automated Tools</h4>
+    <div class="spl-block">sourcetype=web_traffic client_ip="198.51.100.55"
+AND user_agent IN ("*sqlmap*", "*Havij*")
+| table _time path status user_agent</div>
+    <p>Find total Havij events:</p>
+    <div class="spl-block">sourcetype=web_traffic user_agent=*Havij* | stats count</div>
+    <p><strong>Result:</strong> 993 SQLi-related events.</p>
+
+    <h4>Web Shell Execution & Ransomware Payload</h4>
+    <div class="spl-block">sourcetype=web_traffic client_ip="198.51.100.55"
+AND path IN ("*shell.php?cmd=*","*bunnylock.bin*")
+| table _time path user_agent status</div>
+    <p><strong>Interpretation:</strong></p>
+    <ul>
+        <li><code>shell.php?cmd=</code> → Remote Code Execution (RCE)</li>
+        <li><code>bunnylock.bin</code> → Ransomware-style binary executed</li>
+    </ul>
+
+    <h4>Data Exfiltration (Firewall Logs)</h4>
+    <p>Outbound traffic from server to attacker:</p>
+    <div class="spl-block">sourcetype=firewall_logs
+src_ip="10.10.1.5" dest_ip="198.51.100.55" action="ALLOWED"
+| table _time action protocol src_ip dest_ip dest_port bytes_transferred reason</div>
+    <p>Total exfiltration:</p>
+    <div class="spl-block">sourcetype=firewall_logs
+src_ip="10.10.1.5" dest_ip="198.51.100.55" action="ALLOWED"
+| stats sum(bytes_transferred) AS total_bytes</div>
+    <p><strong>Result:</strong> <span class="severity-high">👉 126,167 bytes exfiltrated</span></p>
+
+    <h2>3. Technical Deep Dive: SPL, Data Models, Architecture</h2>
+    
+    <h3>3.1 SPL Efficiency & Data Models</h3>
+    <p>In production, use CIM-aligned accelerated data models:</p>
+    <p><strong>Web:</strong></p>
+    <div class="spl-block">| tstats count FROM datamodel=Web.Web BY Web.http_user_agent Web.src Web.dest span=1h</div>
+    <p><strong>Network Traffic:</strong></p>
+    <div class="spl-block">| tstats sum(Network.bytes) FROM datamodel=Network_Traffic
+  WHERE Network.src="10.10.1.5" Network.dest="198.51.100.55"</div>
+
+    <h3>3.2 Indexing Strategy</h3>
+    <p>Recommended separation for large SOCs:</p>
+    <table>
+        <thead><tr><th>Log Type</th><th>Recommended Index</th></tr></thead>
+        <tbody>
+            <tr><td>Web Logs</td><td>index=web_prod</td></tr>
+            <tr><td>Firewall</td><td>index=fw_prod</td></tr>
+            <tr><td>C2/IPS/IDS</td><td>index=network_security</td></tr>
+        </tbody>
+    </table>
+    <p><strong>Improves:</strong> Search efficiency, Lifecycle management, Access control segmentation.</p>
+
+    <div class="page-break"></div>
+
+    <h2>4. Incident Triage & Analysis Report (Formal Structure)</h2>
+    
+    <h3>4.1 Initial Alert</h3>
+    <p>Abnormal HTTP event spike identified for 2025-10-12.</p>
+
+    <h3>4.2 Investigation Findings</h3>
+    <table>
+        <thead>
+            <tr><th>Attack Phase</th><th>Evidence (SPL Output)</th><th>Interpretation</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Recon</td><td>Attempts at /.env, phpinfo, .git</td><td>Target enumeration</td></tr>
+            <tr><td>Path Traversal</td><td>658 ../ requests</td><td>Attempt to escape web root</td></tr>
+            <tr><td>SQL Injection</td><td>993 Havij/sqlmap hits</td><td>Automated exploitation</td></tr>
+            <tr><td>Web Shell</td><td>shell.php?cmd=</td><td>Attacker gained RCE</td></tr>
+            <tr><td>Ransomware</td><td>bunnylock.bin execution</td><td>Preparation for encryption</td></tr>
+            <tr><td>C2 Traffic</td><td>Allowed outbound traffic</td><td>Confirmed compromise</td></tr>
+            <tr><td>Exfiltration</td><td>126 KB transferred</td><td>Data theft occurred</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4.3 Root Cause Analysis</h3>
+    <p>Attacker exploited web application vulnerabilities (path traversal + SQLi) to deploy a web shell, execute ransomware-like binary, and establish C2 / exfiltration channel.</p>
+
+    <h3>4.4 MITRE ATT&CK Mapping</h3>
+    <table>
+        <thead>
+            <tr><th>Phase</th><th>Technique</th><th>ID</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Reconnaissance</td><td>Active Scanning</td><td>T1595</td></tr>
+            <tr><td>Initial Access</td><td>Exploit Public-Facing App</td><td>T1190</td></tr>
+            <tr><td>Execution</td><td>Web Shell, Command Exec</td><td>T1059 / T1505.003</td></tr>
+            <tr><td>Privilege/Impact</td><td>Ransomware</td><td>T1486</td></tr>
+            <tr><td>Exfiltration</td><td>Exfil over C2 Channel</td><td>T1041</td></tr>
+            <tr><td>C2</td><td>Application Layer Protocol</td><td>T1071</td></tr>
+        </tbody>
+    </table>
+
+    <h2>5. Remediation & Recommendations</h2>
+    
+    <div class="remediation-box">
+        <span class="remediation-header">Immediate</span>
+        <ul>
+            <li>Isolate web server; disable egress.</li>
+            <li>Rotate credentials & secrets.</li>
+            <li>Collect volatile memory and forensic images.</li>
+        </ul>
+    </div>
+
+    <div class="remediation-box">
+        <span class="remediation-header">Detection/Monitoring</span>
+        <ul>
+            <li>Add Splunk correlation: Excessive .env, .git, phpinfo accesses.</li>
+            <li>Non-browser user agents.</li>
+            <li>Repeated traversal patterns.</li>
+            <li>Webshell indicators.</li>
+            <li>Outbound C2 anomalies.</li>
+        </ul>
+    </div>
+
+    <div class="remediation-box">
+        <span class="remediation-header">Hardening</span>
+        <ul>
+            <li>Patch CMS/framework.</li>
+            <li>Implement WAF (SQLi, LFI/RFI, traversal protections).</li>
+            <li>Enforce egress restrictions.</li>
+        </ul>
+    </div>
+
+    <h2>6. Performance & Scaling Considerations</h2>
+    <ul>
+        <li>Use tstats over raw SPL when possible.</li>
+        <li>Avoid wide wildcard filtering (user_agent!=*Mozilla*) — move to lookup tables.</li>
+        <li>Consider summary indexing for long-term trends.</li>
+        <li>Implement index-specific retention policies.</li>
+    </ul>
+
+</div>
+</body>
+</html>
