@@ -5,7 +5,7 @@ Author: Shubharyan Asthana
 This repository contains a collection of SOC (Security Operations Center)–oriented investigation reports created as part of TryHackMe Advent of Cyber 2025.
 All reports follow real-world SOC/Tier-2/Tier-3 documentation standards and demonstrate log analysis, malware analysis, threat identification, and MITRE ATT&CK mapping.
 
-🔹 Included Reports
+Included Reports
 1. SIEM Investigation – Splunk Web Server Compromise (Day 3)
 
 A full end-to-end reconstruction of a web application compromise using Splunk.
