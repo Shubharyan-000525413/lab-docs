@@ -1,125 +1,133 @@
-Security Investigation Portfolio – Lab Documentation
+# Security Investigation Portfolio – Lab Documentation  
+Author: **Shubharyan Asthana**
 
-Author: Shubharyan Asthana
+This repository contains a collection of SOC (Security Operations Center)–oriented investigation reports created as part of **TryHackMe Advent of Cyber 2025**.
 
-This repository contains a collection of SOC (Security Operations Center)–oriented investigation reports created as part of TryHackMe Advent of Cyber 2025.
-All reports follow real-world documentation standards and demonstrate log analysis, malware analysis, threat identification, and MITRE ATT&CK mapping.
+All reports follow real-world SOC/Tier-2/Tier-3 documentation standards and demonstrate skills across SIEM analysis, malware investigation, cloud alert triage, password cracking, and MITRE ATT&CK–aligned threat mapping.
 
-Included Reports
-1. SIEM Investigation – Splunk Web Server Compromise (Day 3)
+The complete portfolio is available as a GitHub Pages site:
 
-A full end-to-end reconstruction of a web application compromise using Splunk.
+👉 **https://shubharyan-000525413.github.io/lab-docs/**
+
+---
+
+## 🔹 Included Reports
+
+### **1. Splunk Investigation – Web Application Compromise (Day 3)**  
+A full end-to-end reconstruction of a web server compromise using Splunk.  
 Includes:
 
-Log triage & anomaly detection
+- Spike and anomaly detection  
+- Attacker fingerprinting  
+- SQL injection & RCE reconstruction  
+- C2 communication correlation  
+- SPL query documentation  
+- MITRE ATT&CK mapping  
+- SOC remediation & detection engineering guidance  
 
-Attacker fingerprinting
+📄 **View report:**  
+`Splunk_Lab_Report.html`
 
-SQLi, traversal & RCE identification
+---
 
-C2 communication confirmation
+### **2. Malware Analysis – HopHelper.exe (Day 6)**  
+Static and dynamic malware analysis of a suspicious Windows executable delivered via phishing.
 
-SPL query correlation
-
-MITRE ATT&CK mapping
-
-Root cause analysis
-
-Detection engineering & remediation guidance
-
-View the report:
-👉 Splunk_Lab_Report.html
-(or open via GitHub Pages below)
-
-2. Malware Analysis – HopHelper.exe (Day 6)
-
-A complete static and dynamic analysis of a suspicious Windows executable delivered via phishing.
 Includes:
 
-SHA256 hash fingerprinting
+- SHA256 hash fingerprinting  
+- Strings and IOC discovery  
+- Registry persistence analysis (Regshot)  
+- Network behavior & outbound traffic (ProcMon)  
+- Behavioral conclusions  
+- MITRE ATT&CK mapping  
 
-Strings & metadata discovery
+📄 **View report:**  
+`Malware_Analysis.html`
 
-Registry persistence analysis (Regshot)
+---
 
-Network behavior analysis (ProcMon)
+### **3. Azure SOC Alert Triage – Microsoft Sentinel (“Tinsel Triage”) (Day 10)**  
+A cloud-native SOC investigation using Microsoft Sentinel to analyze Linux PrivEsc alerts across multiple hosts.
 
-Indicator of Compromise extraction
-
-MITRE ATT&CK mapping
-
-Analyst-driven behavior interpretation
-
-View the report:
-👉 Malware_Analysis.html
-
-3. Password Cracking & Encrypted Archives (Day 9)
-
-A senior-style investigation into cracking weakly protected encrypted PDF and ZIP files.
 Includes:
 
-pdfcrack + John the Ripper usage
+- Alert triage & prioritization  
+- SIEM entity correlation  
+- KQL queries for deep-dive log investigation  
+- Detection of kernel module insertion, sudo abuse, Polkit exploitation attempts  
+- Reverse shell activity identification  
+- Lateral movement analysis  
+- MITRE ATT&CK mapping  
+- SOC remediation & detection engineering recommendations  
 
-Dictionary-based password recovery
+📄 **View report:**  
+`Sentinel_Triage.html`
 
-Offline attack methodology
+---
 
-SOC detection telemetry
+### **4. Password Cracking & Encrypted File Analysis (Day 9)**  
+Hands-on analysis of weak password-protected PDF and ZIP files.
 
-MITRE ATT&CK mapping
+Includes:
 
-Defensive recommendations
+- Dictionary-based cracking (pdfcrack, John the Ripper)  
+- ZIP/PDF hash extraction  
+- Offline attack surface analysis  
+- SOC detection opportunities (process telemetry, GPU load, potfile events)  
+- MITRE ATT&CK mapping  
 
-View the report:
-👉 password-cracking-report.html
+📄 **View report:**  
+`Password_Cracking.html`
 
-🚀 How to View Reports in Your Browser
-Method 1 — View Directly in GitHub
+---
 
-Open any .html file in the repository:
+## 🚀 How to View Reports
 
-Splunk_Lab_Report.html
+### **Method 1 — GitHub Pages (Recommended)**
+Open the full, styled portfolio website:  
+👉 **https://shubharyan-000525413.github.io/lab-docs/**  
 
-Malware_Analysis.html
+Each report contains a dedicated button and is fully readable in-browser.
 
-password-cracking-report.html
+---
 
-Then click:
+### **Method 2 — View HTML Files Directly**
+You can also open the HTML files directly from the repository:
 
-Raw → Open in browser
-(or download & open locally)
+- `Splunk_Lab_Report.html`
+- `Malware_Analysis.html`
+- `Sentinel_Triage.html`
+- `Password_Cracking.html`
 
-Method 2 — View via GitHub Pages (Recommended)
+If GitHub does not render the HTML preview, click **Raw** → Save → open in your browser.
 
-This repository is published through GitHub Pages:
+---
 
-👉 https://shubharyan-000525413.github.io/lab-docs/
+## ⭐ About This Project  
+These reports are intended for:
 
-The landing page links to all investigation reports with a clean navigation interface.
+- Cybersecurity students  
+- Entry-level to intermediate SOC analysts  
+- Anyone learning Splunk, Sentinel, malware analysis, or threat detection  
+- Recruiters & hiring managers evaluating technical capability and documentation skills  
 
-⭐ About This Project
+The documentation structure matches real SOC workflows and demonstrates:
 
-These reports are designed to support:
+- Alert triage  
+- Threat correlation  
+- Forensics-style reconstruction  
+- Detection engineering  
+- MITRE ATT&CK alignment  
 
-Cybersecurity students
+---
 
-Entry-level to intermediate SOC analysts
+## 📬 Contact  
+For collaboration or professional inquiries:
 
-Professionals learning SIEM, malware analysis, and triage
-
-Teams validating security documentation quality
-
-Recruiters evaluating hands-on analytical capability
-
-All documentation reflects industry-grade SOC workflows, including anomaly detection, threat mapping, IOC generation, and actionable recommendations.
-
-Feel free to fork, clone, or reference this repository for learning and portfolio development.
-
-📬 Contact
-
-If you'd like to connect, collaborate, or discuss cybersecurity:
-
-LinkedIn:
+**LinkedIn:**  
 https://www.linkedin.com/in/shubharyan-260102sa
 
-Enjoy the lab reports — and happy threat hunting! 🛡️🔍
+---
+
+Happy threat hunting! 🛡️🔍
