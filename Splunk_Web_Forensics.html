@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Splunk Investigation Report</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap');
+
+body { margin: 0; padding: 0; background: #0f111a; color: #a0aabf; font-family: 'Inter', sans-serif; }
+.container {
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 40px;
+    background: #0f111a;
+    min-height: 100vh;
+    border-top: 5px solid #00d4ff;
+}
+h1, h2, h3, h4 { color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; }
+h1 { font-size: 26px; border-bottom: 2px solid #2d3648; padding-bottom: 15px; margin-bottom: 30px; }
+h2 { color: #00d4ff; font-size: 18px; margin-top: 35px; border-left: 4px solid #00d4ff; padding-left: 12px; }
+h3 { font-size: 14px; color: #e2e8f0; margin-top: 25px; font-weight: 700; }
+
+.meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+    background: #1a1f2e;
+    padding: 20px;
+    border-radius: 4px;
+    border: 1px solid #2d3648;
+}
+.meta-item strong { color: #64748b; font-size: 10px; display: block; text-transform: uppercase; margin-bottom: 5px; }
+.meta-item span { color: #fff; font-weight: 600; font-size: 14px; }
+.severity-high { color: #ffae42; }
+
+.spl-block {
+    background-color: #0d0d0d;
+    border: 1px solid #333;
+    border-left: 4px solid #f58220;
+    color: #22c55e;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 15px;
+    margin: 10px 0 20px 0;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: pre-wrap;
+}
+
+table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+th { background: #2d3648; color: #fff; padding: 10px; text-align: left; border: 1px solid #3f4c6b; }
+td { background: #151921; border: 1px solid #2d3648; padding: 10px; color: #cbd5e1; }
+
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; font-size: 13px; }
+
+.page-break { page-break-before: always; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div style="text-align:right; font-size:10px; color:#64748b;">// CONFIDENTIAL</div>
+
+<h1>
+Splunk-Based Web Attack Forensics Investigation Report<br>
+</h1>
+
+<div style="background:#2d3648; color:white; padding:15px; border-left:4px solid #ffae42; margin-bottom:30px; font-size:13px;">
+Tier-2 SOC investigation focused on web exploitation detection, endpoint correlation, and attacker payload analysis using Splunk.
+</div>
+
+<div class="meta-grid">
+    <div class="meta-item"><strong>Case ID</strong><span>AOC-2025-WEB-IR-015</span></div>
+    <div class="meta-item"><strong>Analyst</strong><span>Shubharyan Asthana</span></div>
+    <div class="meta-item"><strong>System</strong><span>Drone Scheduler Web Server</span></div>
+    <div class="meta-item"><strong>SIEM</strong><span>Splunk Enterprise</span></div>
+    <div class="meta-item"><strong>Log Sources</strong><span>Apache, Sysmon</span></div>
+    <div class="meta-item"><strong>Severity</strong><span class="severity-high">MEDIUM–HIGH (Confirmed Command Injection)</span></div>
+</div>
+
+<h2>1. Lab Overview & Objectives</h2>
+<h3>Purpose</h3>
+<p>
+To investigate suspicious web activity involving long HTTP requests containing Base64-encoded payloads,
+correlate web-layer exploitation with host-level execution, and determine the scope of compromise using Splunk.
+</p>
+
+<h3>Objectives</h3>
+<ul>
+    <li>Detect malicious web requests in Apache access and error logs.</li>
+    <li>Confirm backend execution through Sysmon telemetry.</li>
+    <li>Extract and decode Base64-encoded attacker payloads.</li>
+    <li>Reconstruct the attacker’s execution and reconnaissance chain.</li>
+</ul>
+
+<h2>2. Investigation Methodology</h2>
+
+<h3>2.1 Suspicious Web Request Detection</h3>
+<div class="spl-block">
+index=windows_apache_access (cmd.exe OR powershell OR Invoke-Expression)
+| table _time host clientip uri_path uri_query status
+</div>
+<p>
+Multiple requests were identified containing encoded PowerShell commands passed via HTTP parameters,
+indicating attempted command injection through the web application.
+</p>
+
+<h3>2.2 Apache Error Log Validation</h3>
+<div class="spl-block">
+index=windows_apache_error ("cmd.exe" OR "powershell" OR "Internal Server Error")
+</div>
+<p>
+HTTP 500 responses confirmed that attacker input reached backend execution logic,
+supporting successful exploitation attempts rather than blocked probes.
+</p>
+
+<h3>2.3 Host-Level Process Correlation</h3>
+<div class="spl-block">
+index=windows_sysmon ParentImage="*httpd.exe*"
+</div>
+<p>
+Sysmon logs showed Apache spawning <code>cmd.exe</code> and <code>powershell.exe</code>,
+which is anomalous behavior for a web server and confirms OS-level command execution.
+</p>
+
+<h3>2.4 Post-Exploitation Reconnaissance</h3>
+<div class="spl-block">
+index=windows_sysmon *cmd.exe* *whoami*
+</div>
+<p>
+Execution of <code>whoami.exe</code> was observed, indicating attacker reconnaissance
+to identify execution context after successful injection.
+</p>
+
+<h3>2.5 Encoded Payload Assessment</h3>
+<div class="spl-block">
+index=windows_sysmon Image="*powershell.exe*"
+(CommandLine="*EncodedCommand*" OR CommandLine="*enc*")
+</div>
+<p>
+Encoded PowerShell payloads were identified and decoded.
+No evidence indicated successful execution beyond reconnaissance activity.
+</p>
+
+<h2>3. Findings Summary</h2>
+<table>
+<thead>
+<tr><th>Phase</th><th>Evidence</th><th>Interpretation</th></tr>
+</thead>
+<tbody>
+<tr><td>Initial Access</td><td>Encoded HTTP requests</td><td>Command injection attempt</td></tr>
+<tr><td>Execution</td><td>httpd.exe → cmd.exe</td><td>OS command execution</td></tr>
+<tr><td>Reconnaissance</td><td>whoami.exe</td><td>Privilege/context validation</td></tr>
+<tr><td>Obfuscation</td><td>Base64 PowerShell</td><td>Payload concealment</td></tr>
+</tbody>
+</table>
+
+<h2>4. MITRE ATT&CK Mapping</h2>
+<table>
+<thead>
+<tr><th>Tactic</th><th>Technique</th><th>ID</th></tr>
+</thead>
+<tbody>
+<tr><td>Initial Access</td><td>Exploit Public-Facing Application</td><td>T1190</td></tr>
+<tr><td>Execution</td><td>Command and Scripting Interpreter</td><td>T1059</td></tr>
+<tr><td>Defense Evasion</td><td>Obfuscated/Encoded Files</td><td>T1027</td></tr>
+<tr><td>Discovery</td><td>Account Discovery</td><td>T1033</td></tr>
+</tbody>
+</table>
+
+<h2>5. Conclusions</h2>
+<p>
+This investigation confirmed a successful web-based command injection that resulted in OS-level execution
+and attacker reconnaissance. Splunk correlation across Apache and Sysmon telemetry enabled accurate validation
+of impact and scope. No persistence or lateral movement was observed during the analyzed timeframe.
+</p>
+
+<h2>6. Recommendations</h2>
+<ul>
+    <li>Implement WAF rules for command injection and encoded payload detection.</li>
+    <li>Alert on Apache spawning system interpreters.</li>
+    <li>Log and monitor PowerShell encoded command usage.</li>
+    <li>Apply strict input validation on CGI and web endpoints.</li>
+</ul>
+
+</div>
+</body>
+</html>
