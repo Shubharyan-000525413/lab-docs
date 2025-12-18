@@ -3,7 +3,7 @@ Author: **Shubharyan Asthana**
 
 This repository contains a collection of SOC (Security Operations Center)–oriented investigation reports created as part of **TryHackMe Advent of Cyber 2025**.
 
-All reports follow real-world SOC/Tier-2/Tier-3 documentation standards and demonstrate skills across SIEM analysis, malware investigation, cloud alert triage, password cracking, and MITRE ATT&CK–aligned threat mapping.
+Each report follows real-world SOC Tier-1 → Tier-2 documentation standards, emphasizing accurate investigation workflows, evidence-driven analysis, and defensible conclusions. The portfolio demonstrates hands-on capability across SIEM investigations, web attack forensics, malware analysis, cloud alert triage, password cracking, and detection engineering, with consistent alignment to MITRE ATT&CK.
 
 The complete portfolio is available as a GitHub Pages site:
 
@@ -81,6 +81,28 @@ Includes:
 `Password_Cracking.html`
 
 ---
+### **5. Web Attack Forensics – Command Injection Investigation (Day 15)**
+
+Splunk-based investigation of a web application command injection attack.
+
+Includes:
+
+Detection of malicious HTTP requests containing Base64-encoded payloads
+
+Apache access and error log analysis
+
+Correlation of web exploitation with Sysmon process creation events
+
+Identification of OS-level command execution (cmd.exe, powershell.exe)
+
+Attacker reconnaissance confirmation (whoami.exe)
+
+Payload decoding and scope assessment
+
+MITRE ATT&CK mapping and defensive recommendations
+
+📄 **View report:**  
+Splunk_Web_Forensics.html
 
 ## 🚀 How to View Reports
 
